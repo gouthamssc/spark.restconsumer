@@ -4,32 +4,28 @@ version := "1.0"
 
 scalaVersion := "2.11.8"
 
-assemblyMergeStrategy in assembly := {
-  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-  case x => MergeStrategy.first
-}
-
-libraryDependencies += "org.apache.spark" %% "spark-streaming-kafka-0-10" % "2.4.1"
-
 mainClass := Some("CurrencyJob")
 
-libraryDependencies += "org.apache.spark" %% "spark-sql-kafka-0-10" % "2.4.1"
-
-libraryDependencies += "org.apache.spark" %% "spark-core" % "2.4.1"
-
-libraryDependencies += "org.apache.spark" %% "spark-sql" % "2.4.1"
-
-libraryDependencies += "org.scalaj" %% "scalaj-http" % "2.4.2"
-
-libraryDependencies ++= {
-  val liftVersion = "3.3.0"
-  Seq(
-    "net.liftweb" %% "lift-webkit" % liftVersion % "compile",
-    "ch.qos.logback" % "logback-classic" % "1.2.3"
-  )
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", "services", _ @ _*) => MergeStrategy.first
+  case PathList("META-INF", _ @ _*) => MergeStrategy.discard
+  case _ => MergeStrategy.first
 }
 
-libraryDependencies += "com.typesafe" % "config" % "1.4.0"
+assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false)
 
-libraryDependencies += "org.scalactic" %% "scalactic" % "3.1.0"
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.1.0" % "test"
+libraryDependencies ++= Seq(
+  "org.apache.spark" %% "spark-core" % "2.4.1" % "provided",
+  "org.apache.spark" %% "spark-sql" % "2.4.1" % "provided",
+  "org.apache.spark" %% "spark-streaming" % "2.4.1" % "provided",
+
+  "org.apache.spark" %% "spark-sql-kafka-0-10" % "2.4.1" exclude("org.slf4j", "slf4j-api"),
+  "org.apache.spark" %% "spark-streaming-kafka-0-10" % "2.4.1" exclude("org.slf4j", "slf4j-api"),
+
+  "org.scalaj" %% "scalaj-http" % "2.4.2",
+  "net.liftweb" %% "lift-webkit" % "3.3.0",
+  "com.typesafe" % "config" % "1.4.0",
+  "org.scalactic" %% "scalactic" % "3.1.0",
+
+  "org.scalatest" %% "scalatest" % "3.1.0" % "test"
+)

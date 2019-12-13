@@ -43,9 +43,10 @@ class CurrencyResponseIterator(inner: Iterator[CurrencyRequest],
       case head :: tail =>
         buffer = tail
         head
-      case head :: Nil =>
-        buffer = getNewBatch
-        head
+// dead code:
+//      case head :: Nil =>
+//        buffer = getNewBatch
+//        head
       case Nil =>
         val newBatch = getNewBatch
         buffer = if (newBatch.length == 1) Nil else newBatch.tail

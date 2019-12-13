@@ -7,10 +7,12 @@ case class CurrencyRequest(id: String, value: Double, from_currency: String, to_
 
 case class CurrencyResponse(id: String, initial: Double, converted: Double, from_currency: String, to_currency: String)
 
-case class CurrencyConverter(httpClient: HttpClientTrait) {
+case class CurrencyConverter(httpClient: HttpClientTrait, batchSize: Int) {
+
   def convertCurrency(df: DataFrame)(implicit spark: SparkSession): Dataset[CurrencyResponse] = {
-    val config = ConfigFactory.load("application.conf").getConfig("spark")
+
     import spark.implicits._
+
     val schema = new StructType()
       .add("value", IntegerType)
       .add("from_currency", StringType)
@@ -18,15 +20,12 @@ case class CurrencyConverter(httpClient: HttpClientTrait) {
 
     val uuid = udf(() => java.util.UUID.randomUUID().toString)
 
-    val currencyRequest = df
-      .select($"value".cast("string"))
+    df.select($"value".cast("string"))
       .where(from_json($"value", schema).isNotNull)
       .select(from_json($"value", schema).as("value"))
       .selectExpr("value.*")
       .withColumn("id", uuid())
       .as[CurrencyRequest]
-
-    val batchSize = config.getInt("batch-size")
-    currencyRequest.mapPartitions(requests => new CurrencyResponseIterator(requests, httpClient, batchSize))
+      .mapPartitions(requests => new CurrencyResponseIterator(requests, httpClient, batchSize))
   }
 }

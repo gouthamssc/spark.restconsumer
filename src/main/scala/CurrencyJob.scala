@@ -1,6 +1,5 @@
 
 import com.typesafe.config.ConfigFactory
-import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 
@@ -9,21 +8,23 @@ object CurrencyJob {
     val config = ConfigFactory.load("application.conf").getConfig("spark")
     implicit val spark: SparkSession =
       SparkSession.builder
-        //.master("local")
         .appName("Currency converter")
         .getOrCreate()
     val kafkaURI = config.getString("kafka-cluster")
     val checkpointDir = config.getString("checkpoint-path")
-    val df = spark
+    val batchSize = config.getInt("batch-size")
+    val converter = CurrencyConverter(new HttpClientImpl(config.getString("currency-api")), batchSize)
+
+    import CurrencyRateDataFrame._
+
+    val stream = spark
       .readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", kafkaURI)
       .option("subscribe", "currency_requests")
       .option("startingOffsets", "earliest")
       .load()
-
-    val stream = CurrencyConverter(new HttpClientImpl(config.getString("currency-api")))
-      .convertCurrency(df)
+      .convertCurrency(converter)
       .select(to_json(struct("id", "from_currency", "initial", "converted", "to_currency"))
         .alias("value"))
       .writeStream
